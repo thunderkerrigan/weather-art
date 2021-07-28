@@ -31,6 +31,8 @@ export const Demo = (): ReactElement => {
         const normalizedDailies = dailies.map((d) => d - min);
         const max = Math.max(...normalizedDailies);
         const greyScales = normalizedDailies.map((d) => (d / max) * 255);
+        // const trimmedGreyScales = greyScales.filter((d) => d !== 0);
+        // setValues(trimmedGreyScales);
         setValues(greyScales);
       }
     };
