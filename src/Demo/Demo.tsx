@@ -1,39 +1,72 @@
-import { Fade, Grid, Slide } from "@material-ui/core";
+import { Fade, Grid } from "@material-ui/core";
 import React, { ReactElement, useEffect, useState } from "react";
 import axios from "axios";
+import _ from "lodash";
 import { DateTime } from "luxon";
-import { hourlyData } from "../models/apiModel";
+import { APICallResponse } from "../models/apiModel";
 import { useParams } from "react-router";
+const APIURL = process.env.REACT_APP_WEATHER_API_URL;
 
-const APIURL = "https://api.weatherbit.io/v2.0/history/hourly";
+interface Color {
+  R: number;
+  G: number;
+  B: number;
+}
 
 export const Demo = (): ReactElement => {
-  const [values, setValues] = useState<number[]>([]);
+  const [values, setValues] = useState<Color[]>([]);
   const { city, country } = useParams<{ city: string; country?: string }>();
+  const makeURL = (
+    city: string,
+    startDate: DateTime = DateTime.now().minus({ days: 1 }).startOf("day"),
+    endDate: DateTime = DateTime.now().minus({ days: 1 }).endOf("day")
+  ) => {
+    const formattedStartTime = startDate.toISODate();
+    const formattedEndTime = endDate.toISODate();
+    return `${APIURL}/${city}/${formattedStartTime}/${formattedEndTime}/`;
+  };
+
+  const scalesValues = (rawValues: number[]): number[] => {
+    const min = Math.min(...rawValues);
+    const normalized = rawValues.map((d) => d - min);
+    const max = Math.max(...normalized);
+    return normalized.map((d) => (d / max) * 255);
+  };
+
   useEffect(() => {
     let isMounted = true;
     const fetchData = async () => {
-      const { data } = await axios.get<hourlyData>(APIURL, {
+      const url = makeURL(city);
+      const { data } = await axios.get<APICallResponse>(url, {
+        // TODO: handle country code
         params: {
-          key: "4ff81fbde1ea45ed8db17c27ebd39bc4",
-          city,
-          country,
-          start_date: DateTime.now()
-            .minus({ days: 2 })
-            .startOf("day")
-            .toISODate(),
-          end_date: DateTime.now().minus({ days: 1 }).endOf("day").toISODate(),
+          key: process.env.REACT_APP_WEATHER_API_KEY,
+          unitGroup: "metric",
+          include: "hours",
         },
       });
-      if (isMounted && data.data !== undefined) {
-        const dailies = data.data.map((d) => d.solar_rad);
-        const min = Math.min(...dailies);
-        const normalizedDailies = dailies.map((d) => d - min);
-        const max = Math.max(...normalizedDailies);
-        const greyScales = normalizedDailies.map((d) => (d / max) * 255);
-        // const trimmedGreyScales = greyScales.filter((d) => d !== 0);
-        // setValues(trimmedGreyScales);
-        setValues(greyScales);
+      if (isMounted && data.days !== undefined && data.days.length > 0) {
+        const firstDay = data.days.shift();
+        if (firstDay) {
+          const radiationDailies = firstDay.hours.map(
+            (h) => h.solarradiation || 0
+          );
+          const windDailies = firstDay.hours.map((h) => h.windspeed || 0);
+          const pressureDailies = firstDay.hours.map((h) => h.pressure || 0);
+          const R = scalesValues(radiationDailies);
+          const G = scalesValues(windDailies);
+          const B = scalesValues(pressureDailies);
+          // const G = scalesValues(radiationDailies);
+          // const B = scalesValues(radiationDailies);
+          const colors = _.zip(R, G, B).map((row) => ({
+            R: row[0] || 0,
+            G: row[1] || 0,
+            B: row[2] || 0,
+          }));
+          // const trimmedGreyScales = greyScales.filter((d) => d !== 0);
+          // setValues(trimmedGreyScales);
+          setValues(colors);
+        }
       }
     };
     fetchData();
@@ -51,7 +84,7 @@ export const Demo = (): ReactElement => {
   );
 };
 
-const row = (value: number, index: number, array: number[]) => {
+const row = (value: Color, index: number, array: Color[]) => {
   let nextValue = value;
   if (index + 1 < array.length) {
     nextValue = array[index + 1];
@@ -63,7 +96,7 @@ const row = (value: number, index: number, array: number[]) => {
       key={index}
       style={{
         height: `${100 / array.length}vh`,
-        backgroundImage: `linear-gradient(rgb(${value},${value},${value}), rgb(${nextValue},${nextValue},${nextValue}))`,
+        backgroundImage: `linear-gradient(rgb(${value.R},${value.G},${value.B}), rgb(${nextValue.R},${nextValue.G},${nextValue.B}))`,
       }}
     ></Grid>
   );
