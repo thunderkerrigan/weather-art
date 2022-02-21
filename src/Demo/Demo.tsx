@@ -11,6 +11,7 @@ interface Color {
   R: number;
   G: number;
   B: number;
+  direction: number;
 }
 
 export const Demo = (): ReactElement => {
@@ -36,6 +37,9 @@ export const Demo = (): ReactElement => {
   useEffect(() => {
     let isMounted = true;
     const fetchData = async () => {
+      if (!city) {
+        return;
+      }
       const url = makeURL(city);
       const { data } = await axios.get<APICallResponse>(url, {
         // TODO: handle country code
@@ -53,15 +57,20 @@ export const Demo = (): ReactElement => {
           );
           const windDailies = firstDay.hours.map((h) => h.windspeed || 0);
           const pressureDailies = firstDay.hours.map((h) => h.pressure || 0);
+          const windDirectionDailies = firstDay.hours.map(
+            (h) => h.winddir || 0
+          );
           const R = scalesValues(radiationDailies);
           const G = scalesValues(windDailies);
           const B = scalesValues(pressureDailies);
+          const D = scalesValues(windDirectionDailies);
           // const G = scalesValues(radiationDailies);
           // const B = scalesValues(radiationDailies);
-          const colors = _.zip(R, G, B).map((row) => ({
+          const colors = _.zip(R, G, B, D).map((row) => ({
             R: row[0] || 0,
             G: row[1] || 0,
             B: row[2] || 0,
+            direction: 0,
           }));
           // const trimmedGreyScales = greyScales.filter((d) => d !== 0);
           // setValues(trimmedGreyScales);
@@ -79,7 +88,19 @@ export const Demo = (): ReactElement => {
   const rows = values.map(row);
   return (
     <Fade in={rows.length > 0}>
-      <Grid container>{rows}</Grid>
+      <Grid container>
+        <div
+          style={{
+            position: "absolute",
+            width: "100vw",
+            height: "100vh",
+            zIndex: 100,
+            backgroundColor: "transparent",
+            backdropFilter: "sepia(1)",
+          }}
+        />
+        {rows}
+      </Grid>
     </Fade>
   );
 };
@@ -89,6 +110,7 @@ const row = (value: Color, index: number, array: Color[]) => {
   if (index + 1 < array.length) {
     nextValue = array[index + 1];
   }
+  console.log(value);
   return (
     <Grid
       item
@@ -96,7 +118,7 @@ const row = (value: Color, index: number, array: Color[]) => {
       key={index}
       style={{
         height: `${100 / array.length}vh`,
-        backgroundImage: `linear-gradient(rgb(${value.R},${value.G},${value.B}), rgb(${nextValue.R},${nextValue.G},${nextValue.B}))`,
+        backgroundImage: `linear-gradient( rgb(${value.R},${value.R},${value.R}), rgb(${nextValue.R},${nextValue.R},${nextValue.R}))`,
       }}
     ></Grid>
   );

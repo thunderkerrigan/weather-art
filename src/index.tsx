@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
 // import "./Fonts/fonts.css";
-import { Route } from "react-router";
+import { Route, Routes } from "react-router";
 import { Demo } from "./Demo/Demo";
 import reportWebVitals from "./reportWebVitals";
 import { StrictMode } from "react";
@@ -24,19 +24,16 @@ const theme = createTheme({
 });
 
 ReactDOM.render(
-  <StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <BrowserRouter>
-        <Route strict path="/tableau/:city/:country?">
-          <Demo />
-        </Route>
-        <Route exact path="/">
-          <Config />
-        </Route>
-      </BrowserRouter>
-    </ThemeProvider>
-  </StrictMode>,
+  <ThemeProvider theme={theme}>
+    <CssBaseline />
+    <BrowserRouter>
+      <Routes>
+        <Route index element={<Config />} />
+        <Route path="/tableau/:city" element={<Demo />} />
+        <Route path="/tableau/:city/:country" element={<Demo />} />
+      </Routes>
+    </BrowserRouter>
+  </ThemeProvider>,
   document.getElementById("root")
 );
 

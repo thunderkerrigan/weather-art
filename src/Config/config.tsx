@@ -8,13 +8,13 @@ import {
   TextField,
   Typography,
 } from "@material-ui/core";
-import { useHistory } from "react-router";
 import lolo from "../images/lolo.jpg";
+import { useNavigate } from "react-router";
 
 export const Config = (): ReactElement => {
   const [ville, setVille] = useState<string>();
   const [country, setCountry] = useState<string>("");
-  const history = useHistory();
+  const navigate = useNavigate();
   return (
     <Container>
       <Paper>
@@ -61,7 +61,7 @@ export const Config = (): ReactElement => {
               <Button
                 variant="contained"
                 disabled={ville === undefined}
-                onClick={() => history.push(`/tableau/${ville}/${country}`)}
+                onClick={() => navigate(`/tableau/${ville}/${country}`)}
               >
                 MAKE IT!
               </Button>
